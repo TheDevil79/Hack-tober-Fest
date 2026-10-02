@@ -1,0 +1,99 @@
+/**
+ * Express Application Setup
+ * Configures Helmet, CORS, Rate Limiting, Logging, and API Routing.
+ */
+
+const express = require('express');
+const helmet = require('helmet');
+const cors = require('cors');
+const rateLimit = require('express-rate-limit');
+const scanRoutes = require('./routes/scanRoutes');
+const { logger } = require('./logging/logger');
+
+const app = express();
+
+// 1. Security Headers with Helmet
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:'],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: []
+    }
+  },
+  crossOriginEmbedderPolicy: false
+}));
+
+// 2. CORS Policy
+const allowedOrigins = process.env.ALLOWED_ORIGINS || '*';
+app.use(cors({
+  origin: allowedOrigins === '*' ? '*' : allowedOrigins.split(',').map(o => o.trim()),
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// 3. Request Body Parsing (Bounded Size)
+app.use(express.json({ limit: '100kb' }));
+app.use(express.urlencoded({ extended: false, limit: '100kb' }));
+
+// 4. Rate Limiter for Scan API
+const scanLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 60, // Limit each IP to 60 scan requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    logger.warn('rate_limit_exceeded', {
+      ip: req.ip,
+      path: req.originalUrl
+    });
+    res.status(429).json({
+      error: 'Too Many Requests',
+      message: 'Scan request limit exceeded. Please try again later.'
+    });
+  }
+});
+
+// 5. Request Logging Middleware (Sanitized)
+app.use((req, res, next) => {
+  if (req.path !== '/api/health') {
+    logger.info('http_request_received', {
+      method: req.method,
+      path: req.path,
+      ip: req.ip
+    });
+  }
+  next();
+});
+
+// 6. Mount API Routes
+app.use('/api/scan', scanLimiter);
+app.use('/api', scanRoutes);
+
+// 7. 404 Handler
+app.use((req, res) => {
+  res.status(404).json({
+    error: 'Not Found',
+    message: `Cannot ${req.method} ${req.path}`
+  });
+});
+
+// 8. Global Error Handler (Redacted Stack Traces)
+app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
+  logger.error('unhandled_express_error', {
+    message: err.message,
+    status: err.status || 500
+  });
+
+  res.status(err.status || 500).json({
+    error: 'Internal Server Error',
+    message: 'An unexpected server error occurred.'
+  });
+});
+
+module.exports = app;
