@@ -6,59 +6,63 @@
  */
 
 const express = require('express');
-const { executeScan } = require('../scanners/scanOrchestrator');
+const scanner = require('../scanners/scanOrchestrator');
+const intelligence = require('../services/scans');
 const { logger } = require('../logging/logger');
 
-const router = express.Router();
+function createScanRouter({
+  executeScan = scanner.executeScan,
+  saveAndEnrichScan = intelligence.saveAndEnrichScan
+} = {}) {
+  const router = express.Router();
 
-/**
- * GET /api/health
- * Health check endpoint for container / orchestrator probes.
- */
-router.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'UP',
-    service: 'PatchLens Scanner Backend'
-  });
-});
-
-/**
- * POST /api/scan
- * Initiates a defensive security scan on an authorized URL target.
- */
-router.post('/scan', async (req, res) => {
-  const { target } = req.body || {};
-
-  if (!target || typeof target !== 'string' || target.trim().length === 0) {
-    return res.status(400).json({
-      error: 'Bad Request',
-      message: 'A valid "target" URL string is required in the request body (e.g. {"target": "https://example.com"}).'
+  router.get('/health', (req, res) => {
+    res.status(200).json({
+      status: 'UP',
+      service: 'PatchLens Scanner Backend'
     });
-  }
+  });
 
-  try {
-    const scanResult = await executeScan(target.trim());
-    return res.status(200).json(scanResult);
-  } catch (err) {
-    const statusCode = err.statusCode || 500;
+  router.post('/scan', async (req, res) => {
+    const body = req.body || {};
+    const target = body.url || body.target;
 
-    if (err.code === 'SSRF_BLOCKED' || statusCode === 400) {
+    if (!target || typeof target !== 'string' || target.trim().length === 0) {
       return res.status(400).json({
-        error: 'Invalid Target',
-        message: err.message
+        error: 'Bad Request',
+        message: 'A valid "url" or "target" URL string is required in the request body.'
       });
     }
 
-    logger.error('unhandled_scan_route_error', {
-      error: err.message,
-      target
-    });
+    try {
+      const scanResult = await executeScan(target.trim());
+      const enrichedResult = await saveAndEnrichScan(scanResult);
+      return res.status(200).json(enrichedResult);
+    } catch (error) {
+      const statusCode = error.statusCode || 500;
 
-    return res.status(500).json({
-      error: 'Scan Execution Failed',
-      message: 'An internal error occurred during scan execution. Detailed logs are recorded.'
-    });
-  }
-});
+      if (error.code === 'SSRF_BLOCKED' || statusCode === 400) {
+        return res.status(400).json({
+          error: 'Invalid Target',
+          message: error.message
+        });
+      }
 
+      logger.error('unhandled_scan_route_error', {
+        error: error.message,
+        target
+      });
+
+      return res.status(500).json({
+        error: 'Scan Execution Failed',
+        message: 'An internal error occurred during scan execution. Detailed logs are recorded.'
+      });
+    }
+  });
+
+  return router;
+}
+
+const router = createScanRouter();
 module.exports = router;
+module.exports.createScanRouter = createScanRouter;

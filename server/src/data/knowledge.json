@@ -1,0 +1,27 @@
+[
+  {
+    "title": "Content Security Policy overview",
+    "source": "Curated project note based on OWASP/MDN guidance — replace/add official-source text before judging",
+    "text": "Content Security Policy is a browser security control that restricts which resources a document may load or execute. A policy should be designed for the application rather than copied blindly. Start restrictive, test in report-only mode when appropriate, and avoid unsafe directives where possible."
+  },
+  {
+    "title": "HTTP Strict Transport Security overview",
+    "source": "Curated project note based on OWASP/MDN guidance — replace/add official-source text before judging",
+    "text": "HSTS instructs compatible browsers to access a host only through HTTPS for a declared period. It should be enabled only after HTTPS is correctly deployed because configuration mistakes can affect accessibility."
+  },
+  {
+    "title": "Clickjacking defense overview",
+    "source": "Curated project note based on OWASP/MDN guidance — replace/add official-source text before judging",
+    "text": "Frame restrictions reduce clickjacking exposure. Modern applications can use the CSP frame-ancestors directive; X-Frame-Options is also widely used for compatible behavior. Choose settings according to whether legitimate framing is required."
+  },
+  {
+    "title": "MIME sniffing protection overview",
+    "source": "Curated project note based on MDN guidance — replace/add official-source text before judging",
+    "text": "X-Content-Type-Options: nosniff asks browsers not to reinterpret certain declared MIME types. Correct Content-Type headers should also be returned by the application."
+  },
+  {
+    "title": "Express security headers",
+    "source": "Curated project note based on Express/Helmet documentation — replace/add official-source text before judging",
+    "text": "For Express applications, Helmet can set a collection of HTTP response security headers. Policies such as Content-Security-Policy still require application-specific configuration and testing rather than assuming defaults fit every application."
+  }
+]

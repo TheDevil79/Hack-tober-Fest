@@ -54,7 +54,7 @@ npm install
 ### 2. Environment Configuration
 Copy `.env.example` to `.env`:
 ```bash
-cp .env.example .env
+cp ../.env.example .env
 ```
 
 Available configuration options:
@@ -64,6 +64,12 @@ ALLOWED_ORIGINS=*
 SCAN_TIMEOUT_MS=10000
 MAX_SCAN_CONCURRENCY=5
 OSV_BASE_URL=https://api.osv.dev/v1/query
+MONGODB_URI=
+MONGODB_DB=patchlens
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-2.5-flash
+EMBEDDING_MODEL=gemini-embedding-001
+VECTOR_INDEX=knowledge_vector_index
 ```
 
 ### 3. Start the Server
@@ -72,13 +78,38 @@ npm start
 ```
 The server will start listening on port `5000` (or `PORT` specified in `.env`).
 
+### 4. Start the React frontend for development
+
+In a second terminal:
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173`. Vite proxies API requests to the backend on port `5000`.
+
+For a single-process demo, build the frontend first and then start the backend:
+
+```bash
+cd client
+npm install
+npm run build
+cd ../server
+npm start
+```
+
+Open `http://localhost:5000`. Express automatically serves the built interface from `client/dist`.
+
 ---
 
 ## 📡 API Reference
 
 ### Health Check
 ```http
-GET /api/health
+GET /health
+# GET /api/health is also supported
 ```
 
 **Response (`200 OK`)**:
@@ -97,9 +128,11 @@ POST /api/scan
 Content-Type: application/json
 
 {
-  "target": "https://authorized-demo.example"
+  "url": "https://authorized-demo.example"
 }
 ```
+
+The legacy `target` request field is also supported. Only scan targets you own or are explicitly authorized to assess.
 
 **Response (`200 OK`)**:
 ```json
@@ -132,7 +165,17 @@ Content-Type: application/json
       "name": "Content-Security-Policy",
       "status": "missing",
       "severity": "high",
-      "evidence": "Header not observed in response"
+      "evidence": "Header not observed in response",
+      "remediation": {
+        "explanation": "...",
+        "whyItMatters": "...",
+        "remediation": "...",
+        "implementation": "...",
+        "verification": ["..."],
+        "confidence": "high",
+        "limitations": "...",
+        "sources": []
+      }
     },
     {
       "id": "header-x-frame-options",
@@ -144,6 +187,23 @@ Content-Type: application/json
     }
   ]
 }
+```
+
+If MongoDB or Gemini is unavailable, the deterministic scanner result is still returned. The response includes persistence or remediation availability metadata instead of failing the complete scan.
+
+### Intelligence endpoints
+
+```http
+GET  /api/intelligence/scans/:id
+GET  /api/intelligence/history?target=https%3A%2F%2Fexample.test
+POST /api/intelligence/compare
+POST /api/intelligence/remediate
+```
+
+Seed MongoDB knowledge documents and embeddings after configuring MongoDB and Gemini:
+
+```bash
+npm run seed:knowledge
 ```
 
 ---
@@ -164,6 +224,7 @@ node tests/advisoryScanner.test.js
 node tests/tlsScanner.test.js
 node tests/orchestrator.test.js
 node tests/api.test.js
+node tests/intelligence.test.js
 ```
 
 ---
@@ -177,6 +238,17 @@ server/
     server.js                   # Server initialization
     routes/
       scanRoutes.js             # API route endpoints (/api/scan, /api/health)
+      intelligence.js           # History, comparison, and remediation endpoints
+    ai/
+      gemini.js                 # Grounded remediation and embedding client
+    db/
+      mongo.js                  # Optional MongoDB connection lifecycle
+    services/
+      scans.js                  # Persistence, enrichment, history, and comparison
+      rag.js                    # Vector retrieval with local keyword fallback
+      remediation.js            # Retrieval + Gemini remediation + cache
+    data/
+      knowledge.json            # Curated local fallback knowledge
     scanners/
       scanOrchestrator.js       # Module orchestration & partial error handling
       tlsScanner.js             # TLS/HTTPS inspection
@@ -191,3 +263,5 @@ server/
     logging/
       logger.js                 # Structured logger with sensitive-data redaction
 ```
+
+The `client/` directory contains the React/Vite interface with scan progress, severity summaries, findings and remediation, scan history, before/after comparison, rescan controls, and downloadable/printable reports.

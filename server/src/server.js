@@ -6,6 +6,7 @@
 require('dotenv').config();
 const app = require('./app');
 const { logger } = require('./logging/logger');
+const { closeDb } = require('./db/mongo');
 
 const PORT = parseInt(process.env.PORT, 10) || 5000;
 
@@ -20,7 +21,8 @@ const server = app.listen(PORT, () => {
 // Graceful Shutdown
 function handleShutdown(signal) {
   logger.info('shutdown_signal_received', { signal });
-  server.close(() => {
+  server.close(async () => {
+    await closeDb().catch(error => logger.warn('mongodb_close_failed', { message: error.message }));
     logger.info('server_closed');
     process.exit(0);
   });

@@ -8,7 +8,9 @@
 
 const assert = require('assert');
 const http = require('http');
+const express = require('express');
 const app = require('../src/app');
+const { createScanRouter } = require('../src/routes/scanRoutes');
 
 function makeRequest(server, { method, path, body, headers = {} }) {
   return new Promise((resolve, reject) => {
@@ -71,6 +73,14 @@ async function testApi() {
     assert.strictEqual(healthRes.body.service, 'PatchLens Scanner Backend');
     console.log('  [PASS] GET /api/health returned UP status correctly');
 
+    const rootHealthRes = await makeRequest(server, {
+      method: 'GET',
+      path: '/health'
+    });
+    assert.strictEqual(rootHealthRes.statusCode, 200, 'Root health check should return 200');
+    assert.strictEqual(rootHealthRes.body.status, 'UP');
+    console.log('  [PASS] GET /health compatibility endpoint returned UP status correctly');
+
     // Test 2: POST /api/scan - Missing body validation
     const emptyScanRes = await makeRequest(server, {
       method: 'POST',
@@ -89,6 +99,46 @@ async function testApi() {
     assert.strictEqual(ssrfScanRes.statusCode, 400, 'Localhost should be rejected with 400');
     assert(ssrfScanRes.body.message.includes('SSRF') || ssrfScanRes.body.message.includes('prohibited'));
     console.log('  [PASS] POST /api/scan rejected localhost target with SSRF protection error');
+
+    const urlAliasRes = await makeRequest(server, {
+      method: 'POST',
+      path: '/api/scan',
+      body: { url: 'http://localhost:5000' }
+    });
+    assert.strictEqual(urlAliasRes.statusCode, 400, 'The url input alias should reach scanner validation');
+    console.log('  [PASS] POST /api/scan accepts the url field while preserving SSRF protection');
+
+    const calls = [];
+    const mockApp = express();
+    mockApp.use(express.json());
+    mockApp.use('/api', createScanRouter({
+      executeScan: async target => {
+        calls.push(['scan', target]);
+        return { scanId: 'scan_test', target, technologies: [], findings: [] };
+      },
+      saveAndEnrichScan: async scan => {
+        calls.push(['enrich', scan.scanId]);
+        return { ...scan, intelligenceStatus: 'complete' };
+      }
+    }));
+    const mockServer = http.createServer(mockApp);
+    await new Promise(resolve => mockServer.listen(0, '127.0.0.1', resolve));
+    try {
+      const successRes = await makeRequest(mockServer, {
+        method: 'POST',
+        path: '/api/scan',
+        body: { url: 'https://authorized-test.invalid' }
+      });
+      assert.strictEqual(successRes.statusCode, 200);
+      assert.strictEqual(successRes.body.intelligenceStatus, 'complete');
+      assert.deepStrictEqual(calls, [
+        ['scan', 'https://authorized-test.invalid'],
+        ['enrich', 'scan_test']
+      ]);
+      console.log('  [PASS] POST /api/scan passes scanner output directly into intelligence enrichment');
+    } finally {
+      mockServer.close();
+    }
 
     // Test 4: Rate limiting (Scenario 12)
     console.log('  [PASS] 12. Rate limiting configured and protecting /api/scan endpoints');

@@ -4,10 +4,13 @@
  */
 
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const helmet = require('helmet');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const scanRoutes = require('./routes/scanRoutes');
+const intelligenceRoutes = require('./routes/intelligence');
 const { logger } = require('./logging/logger');
 
 const app = express();
@@ -73,7 +76,27 @@ app.use((req, res, next) => {
 
 // 6. Mount API Routes
 app.use('/api/scan', scanLimiter);
+app.use('/api/intelligence/remediate', scanLimiter);
 app.use('/api', scanRoutes);
+app.use('/api/intelligence', intelligenceRoutes);
+
+// Compatibility health endpoint used by deployment platforms.
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'UP',
+    service: 'PatchLens Scanner Backend'
+  });
+});
+
+// Serve the optional production frontend build from the same backend process.
+const clientDist = path.resolve(__dirname, '..', '..', 'client', 'dist');
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    return res.sendFile(path.join(clientDist, 'index.html'));
+  });
+}
 
 // 7. 404 Handler
 app.use((req, res) => {
