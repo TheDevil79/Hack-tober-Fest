@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Activity, Download, FileText, Github, History, LayoutDashboard,
+  Activity, Download, FileText, History, LayoutDashboard,
   RefreshCw, Search, Shield, TriangleAlert, Wifi, WifiOff
 } from 'lucide-react';
 import { api } from './api';
@@ -115,7 +115,6 @@ export default function App() {
         <nav>
           <a href="#scanner">Scanner</a>
           <a href="#results">Results</a>
-          <a href="https://github.com/TheDevil79/Hackoctber-Fest" target="_blank" rel="noreferrer"><Github size={17} /> Repository</a>
         </nav>
         <div className={`backend-status ${backendOnline === false ? 'offline' : ''}`}>
           {backendOnline === false ? <WifiOff size={14} /> : <Wifi size={14} />}
