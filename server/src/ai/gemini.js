@@ -20,7 +20,7 @@ async function generateRemediation({ finding, technologies, context }) {
   const prompt = `You are the remediation component of a defensive web-security assessment platform.\n\nRULES:\n- The scanner finding below is the source of truth.\n- Do not invent additional vulnerabilities.\n- Do not claim exploitation occurred.\n- If evidence is insufficient, explicitly say verification is required.\n- Use retrieved context when relevant.\n- Return JSON only.\n\nRequired JSON schema:\n{\n  "explanation": "string",\n  "whyItMatters": "string",\n  "remediation": "string",\n  "implementation": "string",\n  "verification": ["string"],\n  "confidence": "high|medium|low",\n  "limitations": "string"\n}\n\nFINDING:\n${JSON.stringify(finding)}\n\nDETECTED TECHNOLOGIES:\n${JSON.stringify(technologies || [])}\n\nRETRIEVED SECURITY GUIDANCE:\n${context || "No matching local guidance was retrieved."}`;
 
   const modelNames = [
-    process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+    process.env.GEMINI_MODEL || 'gemini-3.8-flash',
     ...(process.env.GEMINI_FALLBACK_MODELS || '')
       .split(',')
       .map(name => name.trim())

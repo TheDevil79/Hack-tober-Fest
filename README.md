@@ -67,7 +67,7 @@ OSV_BASE_URL=https://api.osv.dev/v1/query
 MONGODB_URI=
 MONGODB_DB=patchlens
 GEMINI_API_KEY=
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-3.8-flash
 EMBEDDING_MODEL=gemini-embedding-001
 VECTOR_INDEX=knowledge_vector_index
 ```
