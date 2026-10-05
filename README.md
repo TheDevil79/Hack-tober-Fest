@@ -69,6 +69,9 @@ MONGODB_DB=patchlens
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-3.8-flash
 GEMINI_FALLBACK_MODELS=gemini-3.6-flash,gemini-3.5-flash-lite
+AI_PROVIDER=gemma
+GEMMA_MODEL=gemma-4-26b-a4b-it
+GEMMA_FALLBACK_MODELS=gemma-4-31b-it
 EMBEDDING_MODEL=gemini-embedding-001
 VECTOR_INDEX=knowledge_vector_index
 AUTH_USERNAME=your-admin-username
@@ -77,7 +80,9 @@ AUTH_SECRET=use-at-least-32-random-characters
 AUTH_SESSION_TTL_SECONDS=28800
 ```
 
-PatchLens requires an authenticated browser session before scanner or intelligence APIs can be used. Keep the real login values only in your local `.env` file or your hosting provider's secret settings—never commit them. The server issues a signed, expiring bearer token, and the React client keeps it in `sessionStorage` for the current browser session.
+PatchLens requires an authenticated browser session before scanner or intelligence APIs can be used. New accounts are stored in MongoDB with salted scrypt password hashes. `AUTH_USERNAME` and `AUTH_PASSWORD` remain optional as a legacy administrator login. Keep real credentials only in your local `.env` file or your hosting provider's secret settings—never commit them. The server issues a signed, expiring bearer token, and the React client keeps it in `sessionStorage` for the current browser session.
+
+Set `AI_PROVIDER=gemma` to generate remediation with hosted Gemma through the Gemini API. The configured Gemini models remain automatic fallbacks when Gemma is unavailable. Set `AI_PROVIDER=gemini` to reverse that order.
 
 ### 3. Start the Server
 ```bash
@@ -129,12 +134,28 @@ GET /health
 
 ### Authentication
 
+Create an account (requires MongoDB):
+
+```http
+POST /api/auth/signup
+Content-Type: application/json
+
+{
+  "displayName": "Vasu Shukla",
+  "username": "vasu",
+  "email": "vasu@example.com",
+  "password": "StrongPass123"
+}
+```
+
+Sign in with either the username or email:
+
 ```http
 POST /api/auth/login
 Content-Type: application/json
 
 {
-  "username": "your-admin-username",
+  "identifier": "your-username-or-email",
   "password": "your-password"
 }
 ```

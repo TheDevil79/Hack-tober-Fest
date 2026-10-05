@@ -6,7 +6,13 @@ const { logger } = require('../logging/logger');
 
 function cacheKey(finding, technologies) {
   return crypto.createHash("sha256")
-    .update(JSON.stringify({ finding, technologies }))
+    .update(JSON.stringify({
+      finding,
+      technologies,
+      provider: process.env.AI_PROVIDER || 'gemini',
+      gemmaModel: process.env.GEMMA_MODEL || '',
+      geminiModel: process.env.GEMINI_MODEL || ''
+    }))
     .digest("hex");
 }
 

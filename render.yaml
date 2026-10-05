@@ -1,10 +1,10 @@
 services:
   - type: web
-    name: securex
+    name: securex-labs
     runtime: node
     plan: free
     region: oregon
-    branch: member-3
+    branch: feature/gemma-auth-ui
     autoDeploy: true
     buildCommand: npm ci --prefix server && npm ci --prefix client && npm run build --prefix client
     startCommand: npm start --prefix server
@@ -26,12 +26,18 @@ services:
         value: gemini-3.8-flash
       - key: GEMINI_FALLBACK_MODELS
         value: gemini-3.6-flash,gemini-3.5-flash-lite
+      - key: AI_PROVIDER
+        value: gemma
+      - key: GEMMA_MODEL
+        value: gemma-4-26b-a4b-it
+      - key: GEMMA_FALLBACK_MODELS
+        value: gemma-4-31b-it
       - key: EMBEDDING_MODEL
         value: gemini-embedding-001
       - key: VECTOR_INDEX
         value: knowledge_vector_index
       - key: ALLOWED_ORIGINS
-        value: https://securex-f4o2.onrender.com
+        sync: false
       - key: SCAN_TIMEOUT_MS
         value: 30000
       - key: MAX_SCAN_CONCURRENCY

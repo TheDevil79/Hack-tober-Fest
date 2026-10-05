@@ -18,7 +18,7 @@ async function request(path, options = {}) {
 
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
-    if (response.status === 401 && path !== '/api/auth/login') {
+    if (response.status === 401 && !path.startsWith('/api/auth/')) {
       window.sessionStorage.removeItem(TOKEN_KEY);
       window.dispatchEvent(new Event('patchlens:unauthorized'));
     }
@@ -29,10 +29,18 @@ async function request(path, options = {}) {
 
 export const api = {
   hasSession: () => Boolean(getToken()),
-  login: async (username, password) => {
+  login: async (identifier, password) => {
     const session = await request('/api/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ identifier, password })
+    });
+    window.sessionStorage.setItem(TOKEN_KEY, session.token);
+    return session;
+  },
+  signup: async account => {
+    const session = await request('/api/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify(account)
     });
     window.sessionStorage.setItem(TOKEN_KEY, session.token);
     return session;

@@ -12,9 +12,15 @@ function getConfig() {
   };
 }
 
+function hasSigningSecret() {
+  return getConfig().secret.length >= 32;
+}
+
 function isConfigured() {
   const config = getConfig();
-  return Boolean(config.username && config.password && config.secret.length >= 32);
+  return hasSigningSecret() && Boolean(
+    process.env.MONGODB_URI || (config.username && config.password)
+  );
 }
 
 function fixedLengthDigest(value) {
@@ -27,7 +33,7 @@ function safeEqual(left, right) {
 
 function authenticateCredentials(username, password) {
   const config = getConfig();
-  if (!isConfigured()) return false;
+  if (!hasSigningSecret() || !config.username || !config.password) return false;
   return safeEqual(username, config.username) && safeEqual(password, config.password);
 }
 
@@ -35,13 +41,16 @@ function signPayload(encodedPayload, secret) {
   return crypto.createHmac('sha256', secret).update(encodedPayload).digest('base64url');
 }
 
-function issueToken(username) {
+function issueToken(user) {
   const config = getConfig();
-  if (!isConfigured()) throw new Error('Authentication is not configured');
+  if (!hasSigningSecret()) throw new Error('Authentication signing secret is not configured');
 
+  const account = typeof user === 'string' ? { username: user } : user;
   const now = Math.floor(Date.now() / 1000);
   const payload = Buffer.from(JSON.stringify({
-    sub: username,
+    sub: account.username,
+    email: account.email || undefined,
+    displayName: account.displayName || undefined,
     iat: now,
     exp: now + config.ttlSeconds
   })).toString('base64url');
@@ -54,7 +63,7 @@ function issueToken(username) {
 
 function verifyToken(token) {
   const config = getConfig();
-  if (!isConfigured() || typeof token !== 'string') return null;
+  if (!hasSigningSecret() || typeof token !== 'string') return null;
 
   const [payload, signature, extra] = token.split('.');
   if (!payload || !signature || extra) return null;
@@ -65,7 +74,7 @@ function verifyToken(token) {
   try {
     const claims = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
     const now = Math.floor(Date.now() / 1000);
-    if (claims.sub !== config.username || !Number.isFinite(claims.exp) || claims.exp <= now) return null;
+    if (typeof claims.sub !== 'string' || !claims.sub || !Number.isFinite(claims.exp) || claims.exp <= now) return null;
     return claims;
   } catch {
     return null;
@@ -76,7 +85,7 @@ function requireAuth(req, res, next) {
   if (!isConfigured()) {
     return res.status(503).json({
       error: 'Authentication Unavailable',
-      message: 'Server login credentials have not been configured.'
+      message: 'Authentication has not been configured on the server.'
     });
   }
 
@@ -91,13 +100,18 @@ function requireAuth(req, res, next) {
     });
   }
 
-  req.user = { username: claims.sub };
+  req.user = {
+    username: claims.sub,
+    email: claims.email,
+    displayName: claims.displayName
+  };
   return next();
 }
 
 module.exports = {
   authenticateCredentials,
   getConfig,
+  hasSigningSecret,
   isConfigured,
   issueToken,
   requireAuth,

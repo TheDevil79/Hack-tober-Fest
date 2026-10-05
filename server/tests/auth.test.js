@@ -7,6 +7,7 @@ process.env.AUTH_SECRET = process.env.AUTH_SECRET || 'member3-test-secret-that-i
 
 const app = require('../src/app');
 const { issueToken, verifyToken } = require('../src/security/auth');
+const { hashPassword, verifyPassword } = require('../src/security/passwords');
 
 function request(server, { method, path, body, token }) {
   return new Promise((resolve, reject) => {
@@ -44,6 +45,42 @@ async function testAuth() {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 
   try {
+    const passwordHash = await hashPassword('StrongPassword123');
+    assert(passwordHash.startsWith('scrypt$'));
+    assert.strictEqual(await verifyPassword('StrongPassword123', passwordHash), true);
+    assert.strictEqual(await verifyPassword('wrong-password', passwordHash), false);
+    console.log('  [PASS] Account passwords are salted, hashed, and safely verified');
+
+    const invalidSignup = await request(server, {
+      method: 'POST',
+      path: '/api/auth/signup',
+      body: {
+        displayName: 'Test User',
+        username: 'test-user',
+        email: 'test@example.com',
+        password: 'weak'
+      }
+    });
+    assert.strictEqual(invalidSignup.statusCode, 400);
+    console.log('  [PASS] Sign-up rejects weak account credentials');
+
+    const originalMongoUri = process.env.MONGODB_URI;
+    delete process.env.MONGODB_URI;
+    const unavailableSignup = await request(server, {
+      method: 'POST',
+      path: '/api/auth/signup',
+      body: {
+        displayName: 'Test User',
+        username: 'test-user',
+        email: 'test@example.com',
+        password: 'StrongPassword123'
+      }
+    });
+    if (originalMongoUri === undefined) delete process.env.MONGODB_URI;
+    else process.env.MONGODB_URI = originalMongoUri;
+    assert.strictEqual(unavailableSignup.statusCode, 503);
+    console.log('  [PASS] Sign-up validates correctly and fails safely without MongoDB');
+
     const rejected = await request(server, {
       method: 'POST',
       path: '/api/auth/login',

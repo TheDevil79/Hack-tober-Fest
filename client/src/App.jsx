@@ -131,7 +131,7 @@ export default function App() {
   };
 
   if (authLoading) {
-    return <main className="login-page"><div className="auth-loading"><Shield size={24} /><span>Verifying session…</span></div></main>;
+    return <main className="auth-page auth-loading-page"><div className="auth-loading"><Shield size={24} /><span>Verifying session…</span></div></main>;
   }
 
   if (!user) {
@@ -154,7 +154,7 @@ export default function App() {
           {backendOnline === null ? 'Checking API' : backendOnline ? 'API online' : 'API offline'}
         </div>
         <div className="account-menu">
-          <span>{user.username}</span>
+          <span>{user.displayName || user.username}</span>
           <button type="button" onClick={logout}><LogOut size={14} /> Sign out</button>
         </div>
       </header>

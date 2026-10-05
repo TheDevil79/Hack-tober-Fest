@@ -6,6 +6,7 @@ process.env.AUTH_SECRET = process.env.AUTH_SECRET || 'member3-test-secret-that-i
 const app = require('../src/app');
 const { saveAndEnrichScan } = require('../src/services/scans');
 const { issueToken } = require('../src/security/auth');
+const { configuredModels, parseJsonResponse } = require('../src/ai/gemini');
 
 function makeRequest(server, { method, path, body, headers = {} }) {
   return new Promise((resolve, reject) => {
@@ -38,6 +39,8 @@ async function testIntelligence() {
   console.log('--- Running Intelligence Integration Tests ---');
   const originalMongoUri = process.env.MONGODB_URI;
   const originalGeminiKey = process.env.GEMINI_API_KEY;
+  const originalAiProvider = process.env.AI_PROVIDER;
+  process.env.AI_PROVIDER = 'gemma';
   delete process.env.MONGODB_URI;
   delete process.env.GEMINI_API_KEY;
 
@@ -47,6 +50,10 @@ async function testIntelligence() {
   const authHeaders = { Authorization: `Bearer ${issueToken(process.env.AUTH_USERNAME).token}` };
 
   try {
+    assert(configuredModels()[0].startsWith('gemma-'));
+    assert.deepStrictEqual(parseJsonResponse('```json\n{"confidence":"high"}\n```'), { confidence: 'high' });
+    console.log('  [PASS] Gemma is selectable as the primary remediation provider');
+
     const previous = await saveAndEnrichScan({
       scanId: previousId,
       target,
@@ -110,6 +117,8 @@ async function testIntelligence() {
     else process.env.MONGODB_URI = originalMongoUri;
     if (originalGeminiKey === undefined) delete process.env.GEMINI_API_KEY;
     else process.env.GEMINI_API_KEY = originalGeminiKey;
+    if (originalAiProvider === undefined) delete process.env.AI_PROVIDER;
+    else process.env.AI_PROVIDER = originalAiProvider;
   }
 
   return true;

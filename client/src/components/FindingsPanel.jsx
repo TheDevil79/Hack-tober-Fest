@@ -34,7 +34,10 @@ function Remediation({ finding }) {
         <div>
           <span className="eyebrow">Remediation brief</span>
           <h3>Resolve {finding.name}</h3>
-          <p>Prepared from the scanner evidence and trusted security guidance.</p>
+          <p>
+            Prepared from scanner evidence and trusted security guidance
+            {remediation.provider ? ` with ${remediation.provider}` : ''}.
+          </p>
         </div>
         <span className={`confidence-badge ${remediation.confidence || 'unknown'}`}>
           {remediation.confidence || 'Unknown'} confidence

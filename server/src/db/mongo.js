@@ -43,7 +43,9 @@ async function connect() {
     await Promise.all([
       database.collection('scans').createIndex({ scanId: 1 }, { unique: true }),
       database.collection('scans').createIndex({ target: 1, createdAt: -1 }),
-      database.collection('remediationCache').createIndex({ cacheKey: 1 }, { unique: true })
+      database.collection('remediationCache').createIndex({ cacheKey: 1 }, { unique: true }),
+      database.collection('users').createIndex({ usernameKey: 1 }, { unique: true }),
+      database.collection('users').createIndex({ emailKey: 1 }, { unique: true })
     ]);
     lastFailure = undefined;
     lastFailureAt = 0;

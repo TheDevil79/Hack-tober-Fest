@@ -69,14 +69,14 @@ const scanLimiter = rateLimit({
   }
 });
 
-const loginLimiter = rateLimit({
+const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => res.status(429).json({
     error: 'Too Many Requests',
-    message: 'Too many login attempts. Please try again later.'
+    message: 'Too many account attempts. Please try again later.'
   })
 });
 
@@ -93,7 +93,7 @@ app.use((req, res, next) => {
 });
 
 // 6. Mount API Routes
-app.use('/api/auth/login', loginLimiter);
+app.use('/api/auth', authLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/scan', requireAuth, scanLimiter);
 app.use('/api/intelligence', requireAuth);
