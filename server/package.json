@@ -1,0 +1,30 @@
+{
+  "name": "patchlens-scanner-backend",
+  "version": "1.0.0",
+  "description": "PatchLens defensive security scanner and Express.js backend (Member 1)",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js",
+    "test": "node tests/runAllTests.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0"
+  },
+  "keywords": [
+    "security-scanner",
+    "patchlens",
+    "defensive-security",
+    "ssrf-protection",
+    "osv",
+    "tls-scanner",
+    "security-headers"
+  ],
+  "author": "PatchLens Team (Member 1)",
+  "license": "MIT"
+}
