@@ -140,7 +140,7 @@ export default function App() {
           <section className="results" id="results">
             <header className="results-header">
               <div>
-                <span className="eyebrow"><span className="pulse-dot" /> Assessment complete</span>
+                <span className="eyebrow"><span className="pulse-dot" /> Review complete</span>
                 <h2>{scan.target}</h2>
                 <div className="result-meta">
                   <span>{formatDate(scan.timestamp || scan.createdAt)}</span>

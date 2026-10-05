@@ -1,8 +1,20 @@
-import { ChevronDown, ChevronUp, CircleCheck, CircleX, ExternalLink, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import {
+  BookOpen, Check, ChevronDown, ChevronUp, CircleCheck, CircleX,
+  Copy, ExternalLink, Eye, ListChecks, ShieldAlert, Sparkles, Wrench
+} from 'lucide-react';
 import { isResolved, severityOrder } from '../utils';
 
 function Remediation({ finding }) {
   const remediation = finding.remediation;
+  const [copied, setCopied] = useState(false);
+
+  const copyImplementation = async () => {
+    await navigator.clipboard.writeText(remediation.implementation || remediation.remediation || '');
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  };
+
   if (!remediation) {
     return (
       <div className="remediation unavailable">
@@ -17,32 +29,82 @@ function Remediation({ finding }) {
 
   return (
     <div className="remediation">
-      <div className="remediation-title"><Sparkles size={17} /><span>Grounded remediation</span></div>
-      <div className="remediation-grid">
-        <section><h4>What this means</h4><p>{remediation.explanation}</p></section>
-        <section><h4>Why it matters</h4><p>{remediation.whyItMatters}</p></section>
-        <section className="wide"><h4>Recommended fix</h4><p>{remediation.remediation}</p></section>
-        <section className="wide code-guidance"><h4>Implementation</h4><p>{remediation.implementation}</p></section>
-        {remediation.verification?.length > 0 && (
-          <section className="wide">
-            <h4>Verify the improvement</h4>
-            <ol>{remediation.verification.map(item => <li key={item}>{item}</li>)}</ol>
-          </section>
+      <header className="fix-plan-header">
+        <span className="fix-plan-icon"><Sparkles size={20} /></span>
+        <div>
+          <span className="eyebrow">Remediation brief</span>
+          <h3>Resolve {finding.name}</h3>
+          <p>Prepared from the scanner evidence and trusted security guidance.</p>
+        </div>
+        <span className={`confidence-badge ${remediation.confidence || 'unknown'}`}>
+          {remediation.confidence || 'Unknown'} confidence
+        </span>
+      </header>
+
+      <div className="fix-flow" aria-label="Remediation workflow">
+        <span><b>1</b> Understand</span><i />
+        <span><b>2</b> Apply the fix</span><i />
+        <span><b>3</b> Verify</span>
+      </div>
+
+      <div className="insight-grid">
+        <section className="insight-card">
+          <span className="insight-icon blue"><Eye size={18} /></span>
+          <div><h4>What was detected</h4><p>{remediation.explanation}</p></div>
+        </section>
+        <section className="insight-card risk">
+          <span className="insight-icon amber"><ShieldAlert size={18} /></span>
+          <div><h4>Why you should care</h4><p>{remediation.whyItMatters}</p></div>
+        </section>
+      </div>
+
+      <section className="recommended-action">
+        <span className="action-number">01</span>
+        <div><h4>Recommended action</h4><p>{remediation.remediation}</p></div>
+      </section>
+
+      <section className="implementation-card">
+        <header>
+          <div><Wrench size={17} /><span>How to implement it</span></div>
+          <button onClick={copyImplementation} type="button">
+            {copied ? <Check size={14} /> : <Copy size={14} />}
+            {copied ? 'Copied' : 'Copy instructions'}
+          </button>
+        </header>
+        <p>{remediation.implementation}</p>
+      </section>
+
+      {remediation.verification?.length > 0 && (
+        <section className="verification-section">
+          <header><ListChecks size={18} /><div><h4>Verify the improvement</h4><p>Complete these checks after applying the fix.</p></div></header>
+          <div className="verification-steps">
+            {remediation.verification.map((item, index) => (
+              <div key={item}><span>{index + 1}</span><p>{item}</p></div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <div className="guidance-meta">
+        {remediation.limitations && (
+          <div className="limitations"><ShieldAlert size={15} /><div><strong>Keep in mind</strong><p>{remediation.limitations}</p></div></div>
+        )}
+        {remediation.sources?.length > 0 && (
+          <div className="sources">
+            <span><BookOpen size={14} /> Knowledge used</span>
+            <div>
+              {remediation.sources.map(source => {
+                const isLink = /^https?:\/\//i.test(source.source || '');
+                return isLink ? (
+                  <a key={`${source.title}-${source.source}`} href={source.source} target="_blank" rel="noreferrer">
+                    {source.title}<ExternalLink size={11} />
+                  </a>
+                ) : <span className="source-chip" key={`${source.title}-${source.source}`}>{source.title}</span>;
+              })}
+            </div>
+          </div>
         )}
       </div>
-      <div className="remediation-foot">
-        <span>Confidence: {remediation.confidence || 'not stated'}</span>
-        {remediation.limitations && <span>{remediation.limitations}</span>}
-      </div>
-      {remediation.sources?.length > 0 && (
-        <div className="sources">
-          {remediation.sources.map(source => (
-            <a key={`${source.title}-${source.source}`} href={source.source} target="_blank" rel="noreferrer">
-              {source.title}<ExternalLink size={12} />
-            </a>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: patchlens-thedevil79
+    runtime: node
+    plan: free
+    region: singapore
+    branch: feature/member-2-integration
+    autoDeploy: true
+    buildCommand: npm ci --prefix server && npm ci --prefix client && npm run build --prefix client
+    startCommand: npm start --prefix server
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 22.16.0
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB
+        value: patchlens
+      - key: MONGODB_TIMEOUT_MS
+        value: 5000
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: EMBEDDING_MODEL
+        value: gemini-embedding-001
+      - key: VECTOR_INDEX
+        value: knowledge_vector_index
+      - key: ALLOWED_ORIGINS
+        value: https://patchlens-thedevil79.onrender.com
+      - key: SCAN_TIMEOUT_MS
+        value: 30000
+      - key: MAX_SCAN_CONCURRENCY
+        value: 5
+      - key: MAX_AI_CONCURRENCY
+        value: 2

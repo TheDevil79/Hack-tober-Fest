@@ -15,6 +15,11 @@ const { logger } = require('./logging/logger');
 
 const app = express();
 
+// Render and similar hosts terminate HTTPS at a trusted reverse proxy.
+if (process.env.RENDER || process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // 1. Security Headers with Helmet
 app.use(helmet({
   contentSecurityPolicy: {

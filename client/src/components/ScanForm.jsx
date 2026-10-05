@@ -4,9 +4,9 @@ export default function ScanForm({ url, setUrl, authorized, setAuthorized, loadi
   return (
     <section className="scan-card" aria-labelledby="scan-heading">
       <div className="scan-copy">
-        <span className="eyebrow"><Radar size={14} /> Authorized assessment</span>
-        <h1 id="scan-heading">See the risk.<br /><span>Ship the fix.</span></h1>
-        <p>Deterministic scanning meets grounded remediation guidance—without inventing vulnerabilities.</p>
+        <span className="eyebrow"><Radar size={14} /> Authorized security review</span>
+        <h1 id="scan-heading">Security findings.<br /><span>Made actionable.</span></h1>
+        <p>Review the controls that matter, understand the evidence, and leave with a practical remediation plan.</p>
       </div>
 
       <form className="scan-form" onSubmit={onSubmit}>
@@ -23,7 +23,7 @@ export default function ScanForm({ url, setUrl, authorized, setAuthorized, loadi
             disabled={loading}
           />
           <button type="submit" disabled={loading || !authorized}>
-            {loading ? 'Scanning…' : 'Scan site'}
+            {loading ? 'Assessing…' : 'Run assessment'}
             {!loading && <ArrowRight size={17} />}
           </button>
         </div>
