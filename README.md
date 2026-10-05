@@ -66,6 +66,7 @@ MAX_SCAN_CONCURRENCY=5
 OSV_BASE_URL=https://api.osv.dev/v1/query
 MONGODB_URI=
 MONGODB_DB=patchlens
+DNS_SERVERS=1.1.1.1,8.8.8.8
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-3.8-flash
 GEMINI_FALLBACK_MODELS=gemini-3.6-flash,gemini-3.5-flash-lite

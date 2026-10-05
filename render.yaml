@@ -20,6 +20,8 @@ services:
         value: patchlens
       - key: MONGODB_TIMEOUT_MS
         value: 5000
+      - key: DNS_SERVERS
+        value: 1.1.1.1,8.8.8.8
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_MODEL
