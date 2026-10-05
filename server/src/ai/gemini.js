@@ -21,7 +21,7 @@ async function generateRemediation({ finding, technologies, context }) {
 
   const modelNames = [
     process.env.GEMINI_MODEL || 'gemini-3.8-flash',
-    ...(process.env.GEMINI_FALLBACK_MODELS || '')
+    ...(process.env.GEMINI_FALLBACK_MODELS || 'gemini-3.6-flash,gemini-3.5-flash-lite')
       .split(',')
       .map(name => name.trim())
       .filter(Boolean)

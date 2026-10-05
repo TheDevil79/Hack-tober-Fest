@@ -68,6 +68,7 @@ MONGODB_URI=
 MONGODB_DB=patchlens
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-3.8-flash
+GEMINI_FALLBACK_MODELS=gemini-3.6-flash,gemini-3.5-flash-lite
 EMBEDDING_MODEL=gemini-embedding-001
 VECTOR_INDEX=knowledge_vector_index
 ```
