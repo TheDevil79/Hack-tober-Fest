@@ -11,6 +11,8 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const scanRoutes = require('./routes/scanRoutes');
 const intelligenceRoutes = require('./routes/intelligence');
+const authRoutes = require('./routes/auth');
+const { requireAuth } = require('./security/auth');
 const { logger } = require('./logging/logger');
 
 const app = express();
@@ -67,6 +69,17 @@ const scanLimiter = rateLimit({
   }
 });
 
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => res.status(429).json({
+    error: 'Too Many Requests',
+    message: 'Too many login attempts. Please try again later.'
+  })
+});
+
 // 5. Request Logging Middleware (Sanitized)
 app.use((req, res, next) => {
   if (req.path !== '/api/health') {
@@ -80,7 +93,10 @@ app.use((req, res, next) => {
 });
 
 // 6. Mount API Routes
-app.use('/api/scan', scanLimiter);
+app.use('/api/auth/login', loginLimiter);
+app.use('/api/auth', authRoutes);
+app.use('/api/scan', requireAuth, scanLimiter);
+app.use('/api/intelligence', requireAuth);
 app.use('/api/intelligence/remediate', scanLimiter);
 app.use('/api', scanRoutes);
 app.use('/api/intelligence', intelligenceRoutes);

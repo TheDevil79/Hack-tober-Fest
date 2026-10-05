@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     region: oregon
-    branch: feature/member-2-integration
+    branch: member-3
     autoDeploy: true
     buildCommand: npm ci --prefix server && npm ci --prefix client && npm run build --prefix client
     startCommand: npm start --prefix server
@@ -38,3 +38,11 @@ services:
         value: 5
       - key: MAX_AI_CONCURRENCY
         value: 2
+      - key: AUTH_USERNAME
+        sync: false
+      - key: AUTH_PASSWORD
+        sync: false
+      - key: AUTH_SECRET
+        sync: false
+      - key: AUTH_SESSION_TTL_SECONDS
+        value: 28800

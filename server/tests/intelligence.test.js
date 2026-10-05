@@ -1,9 +1,13 @@
 const assert = require('assert');
 const http = require('http');
+process.env.AUTH_USERNAME = process.env.AUTH_USERNAME || 'member3-test';
+process.env.AUTH_PASSWORD = process.env.AUTH_PASSWORD || 'test-password-only';
+process.env.AUTH_SECRET = process.env.AUTH_SECRET || 'member3-test-secret-that-is-at-least-32-characters';
 const app = require('../src/app');
 const { saveAndEnrichScan } = require('../src/services/scans');
+const { issueToken } = require('../src/security/auth');
 
-function makeRequest(server, { method, path, body }) {
+function makeRequest(server, { method, path, body, headers = {} }) {
   return new Promise((resolve, reject) => {
     const postData = body ? JSON.stringify(body) : null;
     const request = http.request({
@@ -12,9 +16,10 @@ function makeRequest(server, { method, path, body }) {
       path,
       method,
       headers: postData ? {
+        ...headers,
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(postData)
-      } : {}
+      } : headers
     }, response => {
       let data = '';
       response.on('data', chunk => { data += chunk; });
@@ -39,6 +44,7 @@ async function testIntelligence() {
   const target = `https://authorized-test.invalid/${Date.now()}`;
   const previousId = `scan_previous_${Date.now()}`;
   const currentId = `scan_current_${Date.now()}`;
+  const authHeaders = { Authorization: `Bearer ${issueToken(process.env.AUTH_USERNAME).token}` };
 
   try {
     const previous = await saveAndEnrichScan({
@@ -71,14 +77,16 @@ async function testIntelligence() {
     try {
       const stored = await makeRequest(server, {
         method: 'GET',
-        path: `/api/intelligence/scans/${currentId}`
+        path: `/api/intelligence/scans/${currentId}`,
+        headers: authHeaders
       });
       assert.strictEqual(stored.statusCode, 200);
       assert.strictEqual(stored.body.scanId, currentId);
 
       const history = await makeRequest(server, {
         method: 'GET',
-        path: `/api/intelligence/history?target=${encodeURIComponent(target)}`
+        path: `/api/intelligence/history?target=${encodeURIComponent(target)}`,
+        headers: authHeaders
       });
       assert.strictEqual(history.statusCode, 200);
       assert.strictEqual(history.body.length, 2);
@@ -86,7 +94,8 @@ async function testIntelligence() {
       const comparison = await makeRequest(server, {
         method: 'POST',
         path: '/api/intelligence/compare',
-        body: { currentId, previousId }
+        body: { currentId, previousId },
+        headers: authHeaders
       });
       assert.strictEqual(comparison.statusCode, 200);
       assert.deepStrictEqual(comparison.body.fixed, ['Content-Security-Policy']);

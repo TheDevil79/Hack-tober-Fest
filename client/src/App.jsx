@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Activity, Download, FileText, History, LayoutDashboard,
-  RefreshCw, Search, Shield, TriangleAlert, Wifi, WifiOff
+  LogOut, RefreshCw, Search, Shield, TriangleAlert, Wifi, WifiOff
 } from 'lucide-react';
 import { api } from './api';
 import { downloadReport, formatDate } from './utils';
@@ -11,6 +11,7 @@ import SummaryCards from './components/SummaryCards';
 import FindingsPanel from './components/FindingsPanel';
 import HistoryPanel from './components/HistoryPanel';
 import ComparisonPanel from './components/ComparisonPanel';
+import LoginScreen from './components/LoginScreen';
 
 const tabs = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -20,6 +21,8 @@ const tabs = [
 ];
 
 export default function App() {
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [url, setUrl] = useState('');
   const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -35,6 +38,20 @@ export default function App() {
 
   useEffect(() => {
     api.health().then(() => setBackendOnline(true)).catch(() => setBackendOnline(false));
+    if (!api.hasSession()) {
+      setAuthLoading(false);
+      return;
+    }
+    api.session()
+      .then(session => setUser(session.user))
+      .catch(() => setUser(null))
+      .finally(() => setAuthLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const handleUnauthorized = () => setUser(null);
+    window.addEventListener('patchlens:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('patchlens:unauthorized', handleUnauthorized);
   }, []);
 
   const loadHistory = useCallback(async target => {
@@ -105,6 +122,22 @@ export default function App() {
     return scan.tls?.protocol === 'none' ? 'HTTPS not used' : 'TLS needs review';
   }, [scan]);
 
+  const logout = () => {
+    api.logout();
+    setUser(null);
+    setScan(null);
+    setHistory([]);
+    setComparison(null);
+  };
+
+  if (authLoading) {
+    return <main className="login-page"><div className="auth-loading"><Shield size={24} /><span>Verifying session…</span></div></main>;
+  }
+
+  if (!user) {
+    return <LoginScreen onAuthenticated={setUser} />;
+  }
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -119,6 +152,10 @@ export default function App() {
         <div className={`backend-status ${backendOnline === false ? 'offline' : ''}`}>
           {backendOnline === false ? <WifiOff size={14} /> : <Wifi size={14} />}
           {backendOnline === null ? 'Checking API' : backendOnline ? 'API online' : 'API offline'}
+        </div>
+        <div className="account-menu">
+          <span>{user.username}</span>
+          <button type="button" onClick={logout}><LogOut size={14} /> Sign out</button>
         </div>
       </header>
 

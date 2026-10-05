@@ -9,8 +9,12 @@
 const assert = require('assert');
 const http = require('http');
 const express = require('express');
+process.env.AUTH_USERNAME = process.env.AUTH_USERNAME || 'member3-test';
+process.env.AUTH_PASSWORD = process.env.AUTH_PASSWORD || 'test-password-only';
+process.env.AUTH_SECRET = process.env.AUTH_SECRET || 'member3-test-secret-that-is-at-least-32-characters';
 const app = require('../src/app');
 const { createScanRouter } = require('../src/routes/scanRoutes');
+const { issueToken } = require('../src/security/auth');
 
 function makeRequest(server, { method, path, body, headers = {} }) {
   return new Promise((resolve, reject) => {
@@ -60,6 +64,7 @@ async function testApi() {
 
   const server = http.createServer(app);
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const authHeaders = { Authorization: `Bearer ${issueToken(process.env.AUTH_USERNAME).token}` };
 
   try {
     // Test 1: GET /api/health
@@ -85,7 +90,8 @@ async function testApi() {
     const emptyScanRes = await makeRequest(server, {
       method: 'POST',
       path: '/api/scan',
-      body: {}
+      body: {},
+      headers: authHeaders
     });
     assert.strictEqual(emptyScanRes.statusCode, 400, 'Empty target should return 400');
     console.log('  [PASS] POST /api/scan rejected missing target with 400 Bad Request');
@@ -94,7 +100,8 @@ async function testApi() {
     const ssrfScanRes = await makeRequest(server, {
       method: 'POST',
       path: '/api/scan',
-      body: { target: 'http://localhost:5000' }
+      body: { target: 'http://localhost:5000' },
+      headers: authHeaders
     });
     assert.strictEqual(ssrfScanRes.statusCode, 400, 'Localhost should be rejected with 400');
     assert(ssrfScanRes.body.message.includes('SSRF') || ssrfScanRes.body.message.includes('prohibited'));
@@ -103,7 +110,8 @@ async function testApi() {
     const urlAliasRes = await makeRequest(server, {
       method: 'POST',
       path: '/api/scan',
-      body: { url: 'http://localhost:5000' }
+      body: { url: 'http://localhost:5000' },
+      headers: authHeaders
     });
     assert.strictEqual(urlAliasRes.statusCode, 400, 'The url input alias should reach scanner validation');
     console.log('  [PASS] POST /api/scan accepts the url field while preserving SSRF protection');

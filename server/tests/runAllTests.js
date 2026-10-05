@@ -11,6 +11,7 @@ const { testTlsScanner } = require('./tlsScanner.test');
 const { testOrchestrator } = require('./orchestrator.test');
 const { testApi } = require('./api.test');
 const { testIntelligence } = require('./intelligence.test');
+const { testAuth } = require('./auth.test');
 
 async function runAll() {
   console.log('====================================================');
@@ -27,7 +28,8 @@ async function runAll() {
     { name: 'OSV Advisory Correlation Strict Rules', fn: testAdvisoryScanner },
     { name: '10-11. Orchestrator Timeout & Partial Failure Resilience', fn: testOrchestrator },
     { name: '12. API Endpoints, Health Check & Rate Limiting', fn: testApi },
-    { name: 'Member 2 Intelligence Integration', fn: testIntelligence }
+    { name: 'Member 2 Intelligence Integration', fn: testIntelligence },
+    { name: 'Member 3 Authentication', fn: testAuth }
   ];
 
   for (const t of tests) {

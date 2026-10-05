@@ -71,7 +71,13 @@ GEMINI_MODEL=gemini-3.8-flash
 GEMINI_FALLBACK_MODELS=gemini-3.6-flash,gemini-3.5-flash-lite
 EMBEDDING_MODEL=gemini-embedding-001
 VECTOR_INDEX=knowledge_vector_index
+AUTH_USERNAME=your-admin-username
+AUTH_PASSWORD=use-a-strong-unique-password
+AUTH_SECRET=use-at-least-32-random-characters
+AUTH_SESSION_TTL_SECONDS=28800
 ```
+
+PatchLens requires an authenticated browser session before scanner or intelligence APIs can be used. Keep the real login values only in your local `.env` file or your hosting provider's secret settings—never commit them. The server issues a signed, expiring bearer token, and the React client keeps it in `sessionStorage` for the current browser session.
 
 ### 3. Start the Server
 ```bash
@@ -120,6 +126,26 @@ GET /health
   "service": "PatchLens Scanner Backend"
 }
 ```
+
+### Authentication
+
+```http
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "username": "your-admin-username",
+  "password": "your-password"
+}
+```
+
+Successful login returns an expiring bearer token. Send it with protected requests:
+
+```http
+Authorization: Bearer <token>
+```
+
+Use `GET /api/auth/session` to validate an existing session. Scanner and intelligence endpoints return `401` without a valid session, and login attempts are rate limited.
 
 ---
 
