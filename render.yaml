@@ -1,9 +1,9 @@
 services:
   - type: web
-    name: patchlens-thedevil79
+    name: securex
     runtime: node
     plan: free
-    region: singapore
+    region: oregon
     branch: feature/member-2-integration
     autoDeploy: true
     buildCommand: npm ci --prefix server && npm ci --prefix client && npm run build --prefix client
@@ -29,7 +29,7 @@ services:
       - key: VECTOR_INDEX
         value: knowledge_vector_index
       - key: ALLOWED_ORIGINS
-        value: https://patchlens-thedevil79.onrender.com
+        value: https://securex-f4o2.onrender.com
       - key: SCAN_TIMEOUT_MS
         value: 30000
       - key: MAX_SCAN_CONCURRENCY
